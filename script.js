@@ -1,5 +1,9 @@
 "use strict";
 
+let language = "ru";
+let isPressShift = false;
+let isPressCaps = false;
+let caretPosition = 0;
 const keys = [
   // {lang: [symbol, pressShift, capsLockOn, pressShift+capsLockOn], keyCode: ""}
   [
@@ -156,6 +160,112 @@ const keys = [
     },
   ],
 ];
+const writingKey = [
+  "Backquote",
+  "Digit1",
+  "Digit2",
+  "Digit3",
+  "Digit4",
+  "Digit5",
+  "Digit6",
+  "Digit7",
+  "Digit8",
+  "Digit9",
+  "Digit0",
+  "Minus",
+  "Equal",
+  "KeyQ",
+  "KeyW",
+  "KeyE",
+  "KeyR",
+  "KeyT",
+  "KeyY",
+  "KeyU",
+  "KeyI",
+  "KeyO",
+  "KeyP",
+  "BracketLeft",
+  "BracketRight",
+  "Backslash",
+  "KeyA",
+  "KeyS",
+  "KeyD",
+  "KeyF",
+  "KeyG",
+  "KeyH",
+  "KeyJ",
+  "KeyK",
+  "KeyL",
+  "Semicolon",
+  "Quote",
+  "KeyZ",
+  "KeyX",
+  "KeyC",
+  "KeyV",
+  "KeyB",
+  "KeyN",
+  "KeyM",
+  "Comma",
+  "Period",
+  "Slash",
+  "ArrowUp",
+  "ArrowLeft",
+  "ArrowDown",
+  "ArrowRight",
+];
+const commandKey = [
+  "Backspace",
+  "Tab",
+  "CapsLock",
+  "Enter",
+  "ShiftLeft",
+  "ShiftRight",
+  "ControlLeft",
+  "MetaLeft",
+  "AltLeft",
+];
+
+// ----------------------------------
+// add textarea
+let textContainer = document.createElement("div");
+textContainer.className = "text-container";
+
+let textArea = document.createElement("textarea");
+[textArea.className, textArea.name, textArea.id] = [
+  "textarea",
+  "textarea",
+  "textarea",
+];
+[textArea.cols, textArea.rows] = [100, 10];
+textArea.placeholder = "Введите что-нибудь...";
+
+textContainer.append(textArea);
+document.body.prepend(textContainer);
+
+//-------------------------------------------------------
+// add keyboard
+let keyboardContainer = document.createElement("div");
+keyboardContainer.className = "keyboard-container";
+keyboardContainer.append(createKeyboard());
+switchKeyboardLayout(language, isPressShift, isPressCaps);
+
+textContainer.after(keyboardContainer);
+
+//-------------------------------------------------------
+// add caption
+document.body.insertAdjacentHTML(
+  "afterbegin",
+  `<div class="logo"><h1>RSS Виртуальная клавиатура</h1></div>`
+);
+document.body.insertAdjacentHTML(
+  "beforeend",
+  `<div class="reference">
+  <p>Клавиатура создана в операционной системе Windows</p>
+  <p>Для переключения языка комбинация: левыe alt + shift</p>
+  </div>`
+);
+
+//-------------------------------------------------------
 
 function createKeyboard() {
   let fragment = new DocumentFragment();
@@ -237,91 +347,100 @@ function getCaret(textElement) {
   else return 0;
 }
 
-let keyboardContainer = document.createElement("div");
-keyboardContainer.className = "keyboard-container";
+function keyCheck(keyCode) {
+  if (writingKey.contains(keyCode)) return "writingKey";
+  if (commandKey.contains(keyCode)) return "commandKey";
+}
 
-keyboardContainer.append(createKeyboard());
+function addKey(keySymbol, caret) {
+  textArea.value =
+    textArea.value.slice(0, caret) + keySymbol + textArea.value.slice(caret);
+}
 
-switchKeyboardLayout("ru", false, false);
+function keySelection(target, isHighLight) {
+  let cell = target.closest("li");
+  if (!cell || !cell.classList.contains("cell")) return;
 
-keyboardContainer.addEventListener("mouseover", (event) => {
-  let target = event.target;
+  if (isHighLight) {
+    cell.classList.add("active");
+  } else {
+    cell.classList.remove("active");
+  }
+}
+
+function addKeyOnMouseClick(event) {
+  let target = event.target.closest("li");
 
   if (target.classList.contains("cell")) {
+    let symbol = target
+      .getElementsByClassName(language)[0]
+      .getElementsByClassName("shown")[0];
+    addKey(symbol.textContent, caretPosition);
+    caretPosition++;
+  }
+}
+
+// ----------------------------------------------
+// keyboard animation
+
+document.addEventListener("keydown", (event) => {
+  event.preventDefault();
+
+  for (let row of keyboardContainer.children) {
+    for (let cell of row.children) {
+      if (cell.dataset.keyCode == event.code) {
+        keySelection(cell, true);
+      }
+    }
+  }
+});
+
+document.addEventListener("keyup", (event) => {
+  event.preventDefault();
+
+  for (let row of keyboardContainer.children) {
+    for (let cell of row.children) {
+      if (cell.dataset.keyCode == event.code) {
+        keySelection(cell, false);
+      }
+    }
+  }
+});
+
+// ----------------------------------------------
+// mouse animation
+keyboardContainer.addEventListener("mousedown", (event) => {
+  keySelection(event.target, true);
+});
+keyboardContainer.addEventListener("mouseup", (event) => {
+  keySelection(event.target, false);
+});
+
+keyboardContainer.addEventListener("mouseover", (event) => {
+  let target = event.target.closest("li");
+
+  if (target && target.classList.contains("cell")) {
     target.style.backgroundColor = "rgb(193, 211, 202)";
-  } else if (target.parentElement.parentElement.classList.contains("cell")) {
-    target.parentElement.parentElement.style.backgroundColor =
-      "rgb(193, 211, 202)";
   }
 });
 
 keyboardContainer.addEventListener("mouseout", (event) => {
   if (event.target.classList.contains("cell")) {
-    event.target.style.backgroundColor = "#3a424e";
+    event.target.style.backgroundColor = "";
   }
 });
 
-// ----------------------------------
-
-let textContainer = document.createElement("div");
-textContainer.className = "text-container";
-
-let textArea = document.createElement("textarea");
-[textArea.className, textArea.name, textArea.id] = [
-  "textarea",
-  "textarea",
-  "textarea",
-];
-[textArea.cols, textArea.rows] = [100, 10];
-textArea.placeholder = "Введите что-нибудь...";
-textArea.value = "0123456789";
-
-textContainer.append(textArea);
-document.body.prepend(textContainer);
-
-document.body.insertAdjacentHTML(
-  "afterbegin",
-  `<div class="logo"><h1>RSS Виртуальная клавиатура</h1></div>`
-);
-document.body.insertAdjacentHTML(
-  "beforeend",
-  `<div class="reference">
-  <p>Клавиатура создана в операционной системе Windows</p>
-  <p>Для переключения языка комбинация: левыe alt + shift</p>
-  </div>`
-);
-
-// -----------------
-textContainer.after(keyboardContainer);
-// --------------------
-
-let lang = "ru";
-let caret = getCaret(textArea);
-
-function addKeyOnMouseClick(event) {
-  let target = event.target;
-
-  if (target.classList.contains("cell")) {
-    let symbol = target
-      .getElementsByClassName(lang)[0]
-      .getElementsByClassName("shown")[0];
-
-    textArea.value =
-      textArea.value.slice(0, caret) +
-      symbol.textContent +
-      textArea.value.slice(caret);
-    caret++;
-  } else if (target.parentElement.parentElement.classList.contains("cell")) {
-    textArea.value =
-      textArea.value.slice(0, caret) +
-      target.textContent +
-      textArea.value.slice(caret);
-    caret++;
+keyboardContainer.addEventListener("mouseleave", () => {
+  for (let row of keyboardContainer.children) {
+    for (let cell of row.children) {
+      cell.style.backgroundColor = "";
+    }
   }
-  console.log("OK");
-}
+});
+// ----------------------------------------------
 
 keyboardContainer.addEventListener("click", addKeyOnMouseClick);
+
 textArea.addEventListener("click", () => {
-  caret = getCaret(textArea);
+  caretPosition = getCaret(textArea);
 });

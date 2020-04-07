@@ -58,8 +58,8 @@ body {
   border: solid 1px white;
 
   cursor: pointer;
-  transition-property: background-color;
-  transition-duration: 0.5s;
+  transition-property: background-color, transform;
+  transition-duration: 0.3s, 0.1s;
 }
 
 .key--symbol {
@@ -68,6 +68,11 @@ body {
 
 .shown {
   display: inline;
+}
+
+.cell.active {
+  transform: scale(1.2);
+  background-color: rgb(193, 211, 202);
 }
 
 .special-key {
