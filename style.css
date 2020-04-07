@@ -58,10 +58,16 @@ body {
   border: solid 1px white;
 
   cursor: pointer;
+  transition-property: background-color;
+  transition-duration: 0.5s;
 }
 
-.cell:hover {
-  background-color: rgb(23, 190, 113);
+.key--symbol {
+  display: none;
+}
+
+.shown {
+  display: inline;
 }
 
 .special-key {
