@@ -261,6 +261,10 @@ switchKeyboardLayout(
   isPressCaps
 );
 
+keyboardContainer.onselectstart = function () {
+  return false;
+};
+
 textContainer.after(keyboardContainer);
 
 //-------------------------------------------------------
@@ -272,8 +276,9 @@ document.body.insertAdjacentHTML(
 document.body.insertAdjacentHTML(
   "beforeend",
   `<div class="reference">
-  <p>Клавиатура создана в операционной системе Windows</p>
-  <p>Для переключения языка комбинация: левыe alt + shift</p>
+  <p>Клавиатура создана в операционной системе Windows.</p>
+  <p>Для переключения языка комбинация: левыe alt + shift.</p>
+  <a href="https://learn.javascript.ru/localstorage#sessionstorage" target="_blink">Для хранения языка клавиатуры используется sessionStorage</a>
   </div>`
 );
 
@@ -381,20 +386,27 @@ function realizeCommand(keyCode, keyValue) {
       caretPosition--;
       break;
     case "Tab":
-      for (let i = 0; i < 4; i++) {
-        textArea.value += "    ";
-        caretPosition += 4;
-        break;
-      }
+      textArea.value =
+        textArea.value.slice(0, caretPosition) +
+        "    " +
+        textArea.value.slice(caretPosition);
+      caretPosition += 4;
+      break;
     case "CapsLock":
       isPressCaps = !isPressCaps;
       break;
     case "Enter":
-      textArea.value += "\n";
+      textArea.value =
+        textArea.value.slice(0, caretPosition) +
+        "\n" +
+        textArea.value.slice(caretPosition);
       caretPosition++;
       break;
     case "Space":
-      textArea.value += " ";
+      textArea.value =
+        textArea.value.slice(0, caretPosition) +
+        " " +
+        textArea.value.slice(caretPosition);
       caretPosition++;
       break;
     case "ShiftLeft":
@@ -405,7 +417,6 @@ function realizeCommand(keyCode, keyValue) {
         true,
         isPressCaps
       );
-      console.log("press shift");
       break;
     case "ControlLeft":
     case "ControlRight":
@@ -413,7 +424,6 @@ function realizeCommand(keyCode, keyValue) {
     case "AltLeft":
     case "AltRight":
       isPressAlt = true;
-      console.log("press alt");
       break;
     case "MetaLeft":
       break;
@@ -450,7 +460,6 @@ function addKeyOnMouseClick(event) {
 
     let keyAction = getKeyAction(target.dataset.keyCode);
     keyAction(target.dataset.keyCode, symbol.textContent);
-    textArea.focus();
   }
 }
 
@@ -606,6 +615,7 @@ document.addEventListener("keydown", (event) => {
     }
   }
 });
+
 textArea.addEventListener("click", () => {
   caretPosition = getCaretPosition(textArea);
 });

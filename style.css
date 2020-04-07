@@ -26,6 +26,7 @@ body {
 .reference {
   margin: 20px auto;
   width: fit-content;
+  text-align: center;
 }
 
 .keyboard-container {
