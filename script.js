@@ -7,7 +7,7 @@ let isPressShift = false;
 let isPressCaps = false;
 let isPressAlt = false;
 let caretPosition = 0;
-// let languageChange = true;
+let mouseUpRecentTarget; // last musedown key
 
 const keys = [
   // {lang: [symbol, pressShift, capsLockOn, pressShift+capsLockOn], keyCode: ""}
@@ -359,6 +359,16 @@ function switchKeyboardLayout(lang, isPressShift, isPressCaps) {
   }
 }
 
+function switchLanguage() {
+  switch (sessionStorage.getItem("language")) {
+    case "en":
+      sessionStorage.setItem("language", "ru");
+      break;
+    case "ru":
+      sessionStorage.setItem("language", "en");
+  }
+}
+
 function getCaretPosition(textElement) {
   if (textElement.selectionStart) return textElement.selectionStart;
   else return 0;
@@ -367,6 +377,17 @@ function getCaretPosition(textElement) {
 function keyCheck(keyCode) {
   if (writingKey.includes(keyCode)) return "writingKey";
   if (commandKey.includes(keyCode)) return "commandKey";
+}
+
+// in getKeyAction choose what's function do -- addKey or realizeCommand
+function getKeyAction(keyCode) {
+  let way = keyCheck(keyCode);
+  switch (way) {
+    case "writingKey":
+      return addKey;
+    case "commandKey":
+      return realizeCommand;
+  }
 }
 
 function addKey(keyCode, keyValue) {
@@ -380,10 +401,12 @@ function addKey(keyCode, keyValue) {
 function realizeCommand(keyCode, keyValue) {
   switch (keyCode) {
     case "Backspace":
-      textArea.value =
-        textArea.value.slice(0, caretPosition - 1) +
-        textArea.value.slice(caretPosition);
-      caretPosition--;
+      if (caretPosition) {
+        textArea.value =
+          textArea.value.slice(0, caretPosition - 1) +
+          textArea.value.slice(caretPosition);
+        caretPosition--;
+      }
       break;
     case "Tab":
       textArea.value =
@@ -394,6 +417,11 @@ function realizeCommand(keyCode, keyValue) {
       break;
     case "CapsLock":
       isPressCaps = !isPressCaps;
+      switchKeyboardLayout(
+        sessionStorage.getItem("language"),
+        isPressShift,
+        isPressCaps
+      );
       break;
     case "Enter":
       textArea.value =
@@ -430,16 +458,6 @@ function realizeCommand(keyCode, keyValue) {
   }
 }
 
-function getKeyAction(keyCode) {
-  let way = keyCheck(keyCode);
-  switch (way) {
-    case "writingKey":
-      return addKey;
-    case "commandKey":
-      return realizeCommand;
-  }
-}
-
 function keySelection(target, isHighLight) {
   let cell = target.closest("li");
   if (!cell || !cell.classList.contains("cell")) return;
@@ -460,6 +478,32 @@ function addKeyOnMouseClick(event) {
 
     let keyAction = getKeyAction(target.dataset.keyCode);
     keyAction(target.dataset.keyCode, symbol.textContent);
+  }
+}
+
+function shiftAltPress(keyCode, isUp) {
+  if (isUp) {
+    switch (keyCode) {
+      case "ShiftLeft":
+      case "ShiftRight":
+        isPressShift = false;
+        break;
+      case "AltLeft":
+      case "AltRight":
+        isPressAlt = false;
+        break;
+    }
+  } else {
+    switch (keyCode) {
+      case "ShiftLeft":
+      case "ShiftRight":
+        isPressShift = true;
+        break;
+      case "AltLeft":
+      case "AltRight":
+        isPressAlt = true;
+        break;
+    }
   }
 }
 
@@ -497,6 +541,7 @@ keyboardContainer.addEventListener("mousedown", (event) => {
 });
 keyboardContainer.addEventListener("mouseup", (event) => {
   keySelection(event.target, false);
+  keySelection(mouseUpRecentTarget, false);
 });
 
 keyboardContainer.addEventListener("mouseover", (event) => {
@@ -542,32 +587,6 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-function shiftAltPress(keyCode, isUp) {
-  if (isUp) {
-    switch (keyCode) {
-      case "ShiftLeft":
-      case "ShiftRight":
-        isPressShift = false;
-        break;
-      case "AltLeft":
-      case "AltRight":
-        isPressAlt = false;
-        break;
-    }
-  } else {
-    switch (keyCode) {
-      case "ShiftLeft":
-      case "ShiftRight":
-        isPressShift = true;
-        break;
-      case "AltLeft":
-      case "AltRight":
-        isPressAlt = true;
-        break;
-    }
-  }
-}
-
 document.addEventListener("keyup", (event) => {
   event.preventDefault();
 
@@ -584,16 +603,10 @@ document.addEventListener("keyup", (event) => {
 // mouse activity
 keyboardContainer.addEventListener("click", addKeyOnMouseClick);
 
+//---------------------------------------
 // change language
 document.addEventListener("keyup", (event) => {
   event.preventDefault();
-  switchKeyboardLayout(
-    sessionStorage.getItem("language"),
-    isPressShift,
-    isPressCaps
-  );
-});
-document.addEventListener("mouseup", () => {
   switchKeyboardLayout(
     sessionStorage.getItem("language"),
     isPressShift,
@@ -605,14 +618,44 @@ document.addEventListener("keydown", (event) => {
   event.preventDefault();
   if (isPressAlt && isPressShift) {
     switchKeyboardLayout(sessionStorage.getItem("language"), false, false);
-    switch (sessionStorage.getItem("language")) {
-      case "en":
-        sessionStorage.setItem("language", "ru");
-        // sessionStorage.getItem("language") = "ru";
-        break;
-      case "ru":
-        sessionStorage.setItem("language", "en");
-    }
+    switchLanguage();
+  }
+});
+
+document.addEventListener("mousedown", (event) => {
+  let target = event.target.closest("li");
+  if (!target) return;
+
+  switch (target.dataset.keyCode) {
+    case "ShiftLeft":
+    case "ShiftRight":
+      isPressShift = true;
+      mouseUpRecentTarget = target;
+      if (event.altKey) {
+        switchLanguage();
+      }
+      switchKeyboardLayout(
+        sessionStorage.getItem("language"),
+        isPressShift,
+        isPressCaps
+      );
+      isPressShift = false;
+  }
+});
+
+document.addEventListener("click", (event) => {
+  let target = mouseUpRecentTarget;
+  if (!target) return;
+
+  switch (target.dataset.keyCode) {
+    case "ShiftLeft":
+    case "ShiftRight":
+      isPressShift = false;
+      switchKeyboardLayout(
+        sessionStorage.getItem("language"),
+        isPressShift,
+        isPressCaps
+      );
   }
 });
 
