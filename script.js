@@ -3,7 +3,10 @@
 let language = "ru";
 let isPressShift = false;
 let isPressCaps = false;
+let isPressAlt = false;
 let caretPosition = 0;
+// let languageChange = true;
+
 const keys = [
   // {lang: [symbol, pressShift, capsLockOn, pressShift+capsLockOn], keyCode: ""}
   [
@@ -221,8 +224,11 @@ const commandKey = [
   "ShiftLeft",
   "ShiftRight",
   "ControlLeft",
+  "ControlRight",
   "MetaLeft",
   "AltLeft",
+  "AltRight",
+  "Space",
 ];
 
 // ----------------------------------
@@ -342,19 +348,76 @@ function switchKeyboardLayout(lang, isPressShift, isPressCaps) {
   }
 }
 
-function getCaret(textElement) {
+function getCaretPosition(textElement) {
   if (textElement.selectionStart) return textElement.selectionStart;
   else return 0;
 }
 
 function keyCheck(keyCode) {
-  if (writingKey.contains(keyCode)) return "writingKey";
-  if (commandKey.contains(keyCode)) return "commandKey";
+  if (writingKey.includes(keyCode)) return "writingKey";
+  if (commandKey.includes(keyCode)) return "commandKey";
 }
 
-function addKey(keySymbol, caret) {
+function addKey(keyCode, keyValue) {
   textArea.value =
-    textArea.value.slice(0, caret) + keySymbol + textArea.value.slice(caret);
+    textArea.value.slice(0, caretPosition) +
+    keyValue +
+    textArea.value.slice(caretPosition);
+  caretPosition++;
+}
+
+function realizeCommand(keyCode, keyValue) {
+  switch (keyCode) {
+    case "Backspace":
+      textArea.value =
+        textArea.value.slice(0, caretPosition - 1) +
+        textArea.value.slice(caretPosition);
+      caretPosition--;
+      break;
+    case "Tab":
+      for (let i = 0; i < 4; i++) {
+        textArea.value += "    ";
+        caretPosition += 4;
+        break;
+      }
+    case "CapsLock":
+      isPressCaps = !isPressCaps;
+      break;
+    case "Enter":
+      textArea.value += "\n";
+      caretPosition++;
+      break;
+    case "Space":
+      textArea.value += " ";
+      caretPosition++;
+      break;
+    case "ShiftLeft":
+    case "ShiftRight":
+      isPressShift = true;
+      switchKeyboardLayout(language, true, isPressCaps);
+      console.log("press shift");
+      break;
+    case "ControlLeft":
+    case "ControlRight":
+      break;
+    case "AltLeft":
+    case "AltRight":
+      isPressAlt = true;
+      console.log("press alt");
+      break;
+    case "MetaLeft":
+      break;
+  }
+}
+
+function getKeyAction(keyCode) {
+  let way = keyCheck(keyCode);
+  switch (way) {
+    case "writingKey":
+      return addKey;
+    case "commandKey":
+      return realizeCommand;
+  }
 }
 
 function keySelection(target, isHighLight) {
@@ -370,17 +433,19 @@ function keySelection(target, isHighLight) {
 
 function addKeyOnMouseClick(event) {
   let target = event.target.closest("li");
+  if (!target) return;
 
   if (target.classList.contains("cell")) {
-    let symbol = target
-      .getElementsByClassName(language)[0]
-      .getElementsByClassName("shown")[0];
-    addKey(symbol.textContent, caretPosition);
-    caretPosition++;
+    let symbol = target.getElementsByClassName("shown")[1];
+
+    let keyAction = getKeyAction(target.dataset.keyCode);
+    keyAction(target.dataset.keyCode, symbol.textContent);
+    textArea.focus();
   }
 }
 
 // ----------------------------------------------
+// Animation
 // keyboard animation
 
 document.addEventListener("keydown", (event) => {
@@ -407,7 +472,6 @@ document.addEventListener("keyup", (event) => {
   }
 });
 
-// ----------------------------------------------
 // mouse animation
 keyboardContainer.addEventListener("mousedown", (event) => {
   keySelection(event.target, true);
@@ -437,10 +501,89 @@ keyboardContainer.addEventListener("mouseleave", () => {
     }
   }
 });
-// ----------------------------------------------
 
+// ----------------------------------------------
+//
+// keyboard activity
+document.addEventListener("keydown", (event) => {
+  event.preventDefault();
+
+  for (let row of keyboardContainer.children) {
+    for (let cell of row.children) {
+      if (cell.dataset.keyCode == event.code) {
+        keySelection(cell, true);
+        let keyAction = getKeyAction(cell.dataset.keyCode);
+        keyAction(
+          cell.dataset.keyCode,
+          cell.getElementsByClassName("shown")[1].textContent
+        );
+        shiftAltPress(cell.dataset.keyCode, false);
+      }
+    }
+  }
+});
+
+function shiftAltPress(keyCode, isUp) {
+  if (isUp) {
+    switch (keyCode) {
+      case "ShiftLeft":
+      case "ShiftRight":
+        isPressShift = false;
+        break;
+      case "AltLeft":
+      case "AltRight":
+        isPressAlt = false;
+        break;
+    }
+  } else {
+    switch (keyCode) {
+      case "ShiftLeft":
+      case "ShiftRight":
+        isPressShift = true;
+        break;
+      case "AltLeft":
+      case "AltRight":
+        isPressAlt = true;
+        break;
+    }
+  }
+}
+
+document.addEventListener("keyup", (event) => {
+  event.preventDefault();
+
+  for (let row of keyboardContainer.children) {
+    for (let cell of row.children) {
+      if (cell.dataset.keyCode == event.code) {
+        keySelection(cell, false);
+        shiftAltPress(cell.dataset.keyCode, true);
+      }
+    }
+  }
+});
+
+// mouse activity
 keyboardContainer.addEventListener("click", addKeyOnMouseClick);
 
+// change language
+document.addEventListener("keyup", (event) => {
+  event.preventDefault();
+  switchKeyboardLayout(language, isPressShift, isPressCaps);
+});
+
+document.addEventListener("keydown", (event) => {
+  event.preventDefault();
+  if (isPressAlt && isPressShift) {
+    switchKeyboardLayout(language, false, false);
+    switch (language) {
+      case "en":
+        language = "ru";
+        break;
+      case "ru":
+        language = "en";
+    }
+  }
+});
 textArea.addEventListener("click", () => {
-  caretPosition = getCaret(textArea);
+  caretPosition = getCaretPosition(textArea);
 });
