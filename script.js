@@ -1,6 +1,8 @@
 "use strict";
 
-let language = "ru";
+if (!sessionStorage.getItem("language")) {
+  sessionStorage.setItem("language", "ru");
+}
 let isPressShift = false;
 let isPressCaps = false;
 let isPressAlt = false;
@@ -253,7 +255,11 @@ document.body.prepend(textContainer);
 let keyboardContainer = document.createElement("div");
 keyboardContainer.className = "keyboard-container";
 keyboardContainer.append(createKeyboard());
-switchKeyboardLayout(language, isPressShift, isPressCaps);
+switchKeyboardLayout(
+  sessionStorage.getItem("language"),
+  isPressShift,
+  isPressCaps
+);
 
 textContainer.after(keyboardContainer);
 
@@ -394,7 +400,11 @@ function realizeCommand(keyCode, keyValue) {
     case "ShiftLeft":
     case "ShiftRight":
       isPressShift = true;
-      switchKeyboardLayout(language, true, isPressCaps);
+      switchKeyboardLayout(
+        sessionStorage.getItem("language"),
+        true,
+        isPressCaps
+      );
       console.log("press shift");
       break;
     case "ControlLeft":
@@ -568,19 +578,31 @@ keyboardContainer.addEventListener("click", addKeyOnMouseClick);
 // change language
 document.addEventListener("keyup", (event) => {
   event.preventDefault();
-  switchKeyboardLayout(language, isPressShift, isPressCaps);
+  switchKeyboardLayout(
+    sessionStorage.getItem("language"),
+    isPressShift,
+    isPressCaps
+  );
+});
+document.addEventListener("mouseup", () => {
+  switchKeyboardLayout(
+    sessionStorage.getItem("language"),
+    isPressShift,
+    isPressCaps
+  );
 });
 
 document.addEventListener("keydown", (event) => {
   event.preventDefault();
   if (isPressAlt && isPressShift) {
-    switchKeyboardLayout(language, false, false);
-    switch (language) {
+    switchKeyboardLayout(sessionStorage.getItem("language"), false, false);
+    switch (sessionStorage.getItem("language")) {
       case "en":
-        language = "ru";
+        sessionStorage.setItem("language", "ru");
+        // sessionStorage.getItem("language") = "ru";
         break;
       case "ru":
-        language = "en";
+        sessionStorage.setItem("language", "en");
     }
   }
 });
