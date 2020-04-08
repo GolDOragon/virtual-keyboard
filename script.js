@@ -539,6 +539,7 @@ document.addEventListener("keyup", (event) => {
 keyboardContainer.addEventListener("mousedown", (event) => {
   keySelection(event.target, true);
 });
+
 keyboardContainer.addEventListener("mouseup", (event) => {
   keySelection(event.target, false);
   keySelection(mouseUpRecentTarget, false);
@@ -625,12 +626,12 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("mousedown", (event) => {
   let target = event.target.closest("li");
   if (!target) return;
+  mouseUpRecentTarget = target;
 
   switch (target.dataset.keyCode) {
     case "ShiftLeft":
     case "ShiftRight":
       isPressShift = true;
-      mouseUpRecentTarget = target;
       if (event.altKey) {
         switchLanguage();
       }
