@@ -6,7 +6,7 @@
   "browserslist": "> 0.25%, not dead",
   "main": "index.js",
   "scripts": {
-    "test": "npx jest",
+    "test": "npx jest --runInBand",
     "serve": "cross-env NODE_ENV=development npx webpack-dev-server --mode development",
     "build": "cross-env NODE_ENV=production npx webpack --mode production",
     "lint": "eslint ./src",

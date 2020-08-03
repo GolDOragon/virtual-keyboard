@@ -73,7 +73,7 @@ module.exports = {
   },
   resolve: {
     alias: {
-      // '@': path.resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, 'src'),
     },
   },
   devtool: isDevMode ? 'source-map' : '',
